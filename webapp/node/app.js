@@ -21,6 +21,9 @@ if (cluster.isMaster) {
     }
 } else {
 	var app = express();
+	
+	//global object
+	global = {};
 
 	var globalConfig = {
 	  userLockThreshold: process.env.ISU4_USER_LOCK_THRESHOLD || 3,
@@ -75,27 +78,27 @@ if (cluster.isMaster) {
 
 	  isIPBanned: function(ip, callback) {
 		mysqlPool.query(
-		  'SELECT COUNT(1) AS failures FROM login_log WHERE ' +
-		  'ip = ? AND id > IFNULL((select id from login_log where ip = ? AND ' +
-		  'succeeded = 1 ORDER BY id DESC LIMIT 1), 0);',
-		  // 'SELECT id,succeeded FROM login_log WHERE ip = ?',
-		  // [ip],
-		  [ip, ip],
+		  // 'SELECT COUNT(1) AS failures FROM login_log WHERE ' +
+		  // 'ip = ? AND id > IFNULL((select id from login_log where ip = ? AND ' +
+		  // 'succeeded = 1 ORDER BY id DESC LIMIT 1), 0);',
+		  'SELECT id,succeeded FROM login_log WHERE ip = ?',
+		  [ip],
+		  // [ip, ip],
 		  function(err, rows) {
 			if(err) {
 			  return callback(false);
 			}
-			// var cnt = 0, i;
-			// for (i=rows.length; i>0; i--) {
-				// if (rows[i-1].succeeded == 0) {
-					// cnt++;
-				// } else {
-					// break;
-				// }
-			// }
+			var cnt = 0, i;
+			for (i=rows.length; i>0; i--) {
+				if (rows[i-1].succeeded == 0) {
+					cnt++;
+				} else {
+					break;
+				}
+			}
 
-			// callback(globalConfig.ipBanThreshold <= cnt);
-			callback(globalConfig.ipBanThreshold <= rows[0].failures);
+			callback(globalConfig.ipBanThreshold <= cnt);
+			// callback(globalConfig.ipBanThreshold <= rows[0].failures);
 		  }
 		)
 	  },
@@ -107,9 +110,15 @@ if (cluster.isMaster) {
 
 		async.waterfall([
 		  function(cb) {
-			mysqlPool.query('SELECT * FROM users WHERE login = ?', [login], function(err, rows) {
-			  cb(null, rows[0]);
-			});
+			if (!global[login]) {
+				mysqlPool.query('SELECT * FROM users WHERE login = ?', [login], function(err, rows) {
+				  // cache data
+				  global[login] = rows[0];
+				  cb(null, rows[0]);
+				});
+			} else {
+				cb(null, global[login]);
+			}
 		  },
 		  function(user, cb) {
 			helpers.isIPBanned(ip, function(banned) {
@@ -180,13 +189,19 @@ if (cluster.isMaster) {
 	  },
 
 	  getCurrentUser: function(user_id, callback) {
-		mysqlPool.query('SELECT * FROM users WHERE id = ?', [user_id], function(err, rows) {
-		  if(err) {
-			return callback(null);
-		  }
+		if (!global[user_id]) {
+			mysqlPool.query('SELECT * FROM users WHERE id = ?', [user_id], function(err, rows) {
+			  if(err) {
+				return callback(null);
+			  }
+			  // cache data
+			  global[user_id] = rows[0];
 
-		  callback(rows[0]);
-		});
+			  callback(rows[0]);
+			});
+		} else {
+			callback(global[user_id]);
+		}
 	  },
 
 	  getBannedIPs: function(callback) {
