@@ -14,4 +14,4 @@ TNG isucon4_qualify
 * クエリストリングを用いてトップページを静的出力で *Score 37500* まで上昇。
 
 ##### 09/30 01:00 更新
-* mypage.ectとlayout.ectを単一のテンプレート `comp_mypage.ect` にして *Score 37800* まで上昇。
+* mypage.ectとlayout.ectを単一のテンプレート `comp_mypage.ect` にして *Score 38000* まで上昇。
