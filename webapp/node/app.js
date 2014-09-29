@@ -294,12 +294,12 @@ if (cluster.isMaster) {
           return strftime(format, date);
         };
 
-        app.get('/', function(req, res) {
-          var notice = req.session.notice;
-          req.session.notice = null;
+        // app.get('/', function(req, res) {
+          // var notice = req.session.notice;
+          // req.session.notice = null;
 
-          res.render('index', { 'notice': notice });
-        });
+          // res.render('index', { 'notice': notice });
+        // });
 
         app.post('/login', function(req, res) {
           helpers.attemptLogin(req, function(err, user) {
@@ -307,15 +307,15 @@ if (cluster.isMaster) {
 				  var query = '';
                   switch(err) {
                         case 'locked':
-                          req.session.notice = 'This account is locked.';
+                          // req.session.notice = 'This account is locked.';
 						  query = 'lock';
                           break;
                         case 'banned':
-                          req.session.notice = "You're banned.";
+                          // req.session.notice = "You're banned.";
 						  query = 'ban';
                           break;
                         default:
-                          req.session.notice = 'Wrong username or password';
+                          // req.session.notice = 'Wrong username or password';
 						  query = 'wrong';
                           break;
                   }
@@ -331,7 +331,7 @@ if (cluster.isMaster) {
           helpers.getCurrentUser(req.session.userId, function(user) {
                 if(!user) {
 				  var query = 'must';
-                  req.session.notice = "You must be logged in";
+                  // req.session.notice = "You must be logged in";
                   return res.redirect('/?status=' + query);
                 }
 
@@ -340,7 +340,7 @@ if (cluster.isMaster) {
                   [user.id],
                   function(err, rows) {
                         var lastLogin = rows[rows.length-1];
-                        res.render('mypage', { 'last_login': lastLogin });
+                        res.render('comp_mypage', { 'last_login': lastLogin });
                   }
                 );
           });
