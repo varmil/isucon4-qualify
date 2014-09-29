@@ -15,3 +15,6 @@ TNG isucon4_qualify
 
 ##### 09/30 01:00 更新
 * mypage.ectとlayout.ectを単一のテンプレート `comp_mypage.ect` にして *Score 38000* まで上昇。
+
+##### 09/30 01:20 更新
+* nginx.confをパフォーマンス重視の設定に変更して *Score 38500* まで上昇。
