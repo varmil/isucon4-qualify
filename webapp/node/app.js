@@ -1,7 +1,7 @@
 var _ = require('underscore');
 var async = require('async');
 var bodyParser = require('body-parser');
-var crypto = require('crypto');
+// var crypto = require('crypto');
 var ect = require('ect');
 var express = require('express');
 // var logger = require('morgan');
@@ -23,7 +23,7 @@ if (cluster.isMaster) {
         var app = express();
 
         //global object
-        global = {};
+        // global = {};
 
         var globalConfig = {
           userLockThreshold: process.env.ISU4_USER_LOCK_THRESHOLD || 3,
@@ -38,23 +38,23 @@ if (cluster.isMaster) {
         });
 
         var helpers = {
-          calculatePasswordHash: function(password, salt) {
-                var c = crypto.createHash('sha256');
-                c.update(password + ':' + salt);
-                return c.digest('hex');
-          },
+          // calculatePasswordHash: function(password, salt) {
+          //       var c = crypto.createHash('sha256');
+          //       c.update(password + ':' + salt);
+          //       return c.digest('hex');
+          // },
 
           isUserLocked: function(user, callback) {
                 if(!user) {
                   return callback(false);
-                };
+                }
 
                 mysqlPool.query(
                   'SELECT COUNT(1) AS failures FROM login_log WHERE ' +
                   'user_id = ? AND id > IFNULL((select id from login_log where ' +
                   'user_id = ? AND succeeded = 1 ORDER BY id DESC LIMIT 1), 0);',
-                  // 'SELECT id,succeeded FROM login_log WHERE user_id = ?',
                   [user.id, user.id],
+                  // 'SELECT id,succeeded FROM login_log WHERE user_id = ?',
                   // [user.id],
                   function(err, rows) {
                         if(err) {
@@ -69,11 +69,11 @@ if (cluster.isMaster) {
                                         // break;
                                 // }
                         // }
-
                         // callback(globalConfig.userLockThreshold <= cnt);
+
                         callback(globalConfig.userLockThreshold <= rows[0].failures);
                   }
-                )
+                );
           },
 
           isIPBanned: function(ip, callback) {
@@ -81,26 +81,26 @@ if (cluster.isMaster) {
                   // 'SELECT COUNT(1) AS failures FROM login_log WHERE ' +
                   // 'ip = ? AND id > IFNULL((select id from login_log where ip = ? AND ' +
                   // 'succeeded = 1 ORDER BY id DESC LIMIT 1), 0);',
+                  // [ip, ip],
                   'SELECT id,succeeded FROM login_log WHERE ip = ?',
                   [ip],
-                  // [ip, ip],
                   function(err, rows) {
                         if(err) {
                           return callback(false);
                         }
                         var cnt = 0, i;
                         for (i=rows.length; i>0; i--) {
-                                if (rows[i-1].succeeded == 0) {
+                                if (rows[i-1].succeeded === 0) {
                                         cnt++;
                                 } else {
                                         break;
                                 }
                         }
-
                         callback(globalConfig.ipBanThreshold <= cnt);
+
                         // callback(globalConfig.ipBanThreshold <= rows[0].failures);
                   }
-                )
+                );
           },
 
           attemptLogin: function(req, callback) {
@@ -110,15 +110,19 @@ if (cluster.isMaster) {
 
                 async.waterfall([
                   function(cb) {
-                        if (!global[login]) {
-                                mysqlPool.query('SELECT * FROM users WHERE login = ?', [login], function(err, rows) {
-                                  // cache data
-                                  global[login] = rows[0];
-                                  cb(null, rows[0]);
-                                });
-                        } else {
-                                cb(null, global[login]);
-                        }
+                        // if (!global['login_' + login]) {
+                        //         mysqlPool.query('SELECT * FROM users WHERE login = ?', [login], function(err, rows) {
+                        //           // cache data
+                        //           global['login_' + login] = rows[0];
+                        //           cb(null, rows[0]);
+                        //         });
+                        // } else {
+                        //         cb(null, global['login_' + login]);
+                        // }
+                        client.get('login:' + login, function(err, res) {
+                          var user = JSON.parse(res);
+                          cb(null, user);
+                        });
                   },
                   function(user, cb) {
                         helpers.isIPBanned(ip, function(banned) {
@@ -126,7 +130,7 @@ if (cluster.isMaster) {
                                 cb('banned', user);
                           } else {
                                 cb(null, user);
-                          };
+                          }
                         });
                   },
                   function(user, cb) {
@@ -135,17 +139,18 @@ if (cluster.isMaster) {
                                 cb('locked', user);
                           } else {
                                 cb(null, user);
-                          };
+                          }
                         });
                   },
                   function(user, cb) {
-                        if(user && helpers.calculatePasswordHash(password, user.salt) == user.password_hash) {
+                        // if(user && helpers.calculatePasswordHash(password, user.salt) == user.password_hash) {
+                        if(user && password == user.password_hash) {
                           cb(null, user);
                         } else if(user) {
                           cb('wrong_password', user);
                         } else {
                           cb('wrong_login', user);
-                        };
+                        }
                   }
                 ], function(err, user) {
                         var succeeded = !err;
@@ -189,19 +194,23 @@ if (cluster.isMaster) {
           },
 
           getCurrentUser: function(user_id, callback) {
-                if (!global[user_id]) {
-                        mysqlPool.query('SELECT * FROM users WHERE id = ?', [user_id], function(err, rows) {
-                          if(err) {
-                                return callback(null);
-                          }
-                          // cache data
-                          global[user_id] = rows[0];
+                // if (!global['uid_' + user_id]) {
+                //         mysqlPool.query('SELECT * FROM users WHERE id = ?', [user_id], function(err, rows) {
+                //           if(err) {
+                //                 return callback(null);
+                //           }
+                //           // cache data
+                //           global['uid_' + user_id] = rows[0];
 
-                          callback(rows[0]);
-                        });
-                } else {
-                        callback(global[user_id]);
-                }
+                //           callback(rows[0]);
+                //         });
+                // } else {
+                //         callback(global['uid_' + user_id]);
+                // }
+                client.get('id:' + user_id, function(err, res) {
+                  var user = JSON.parse(res);
+                  callback(user);
+                });
           },
 
           getBannedIPs: function(callback) {
@@ -237,7 +246,7 @@ if (cluster.isMaster) {
                           }
                         );
                   }
-                )
+                );
           },
 
           getLockedUsers: function(callback) {
@@ -263,7 +272,7 @@ if (cluster.isMaster) {
                                                 function(err, rows) {
                                                   if(globalConfig.userLockThreshold <= (rows[0] || {})['cnt']) {
                                                         lockedUsers.push(row['login']);
-                                                  };
+                                                  }
                                                   cb(null);
                                                 }
                                           );
@@ -276,7 +285,7 @@ if (cluster.isMaster) {
                           }
                         );
                   }
-                )
+                );
           }
         };
 
@@ -287,7 +296,6 @@ if (cluster.isMaster) {
         app.use(bodyParser.urlencoded({ extended: false }));
         var options = {host: 'localhost', port: 6379, db: 2};
         app.use(session({ store: new RedisStore(options), 'secret': 'isucon4-node-qualifier', resave: true, saveUninitialized: true }));
-        // app.use(session({ cookie: {}, 'secret': 'isucon4-node-qualifier' }));
         app.use(express.static(path.join(__dirname, '../public')));
 
         app.locals.strftime = function(format, date) {
@@ -304,20 +312,20 @@ if (cluster.isMaster) {
         app.post('/login', function(req, res) {
           helpers.attemptLogin(req, function(err, user) {
                 if(err) {
-				  var query = '';
+				          var query = '';
                   switch(err) {
-                        case 'locked':
-                          // req.session.notice = 'This account is locked.';
-						  query = 'lock';
-                          break;
-                        case 'banned':
-                          // req.session.notice = "You're banned.";
-						  query = 'ban';
-                          break;
-                        default:
-                          // req.session.notice = 'Wrong username or password';
-						  query = 'wrong';
-                          break;
+                      case 'locked':
+                        // req.session.notice = 'This account is locked.';
+                        query = 'lock';
+                        break;
+                      case 'banned':
+                        // req.session.notice = "You're banned.";
+                        query = 'ban';
+                        break;
+                      default:
+                        // req.session.notice = 'Wrong username or password';
+                        query = 'wrong';
+                        break;
                   }
                   return res.redirect('/?status=' + query);
                 }
@@ -370,4 +378,9 @@ if (cluster.isMaster) {
         var server = app.listen(process.env.PORT || 8080, function() {
           console.log('Listening on port %d', server.address().port);
         });
+
+        // http.createServerを使わなくてもサーバー建てられるぽい
+        // var server = http.createServer(app).listen(process.env.PORT || 8080, function() {
+        //   console.log('Listening on port %d', server.address().port);
+        // });
 }

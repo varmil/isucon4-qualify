@@ -1,0 +1,17 @@
+.bash_history
+.bash_logout
+.bash_profile
+.bashrc
+.cpanm/
+.gem/
+.gitconfig
+.kshrc
+.local/
+.mysql_history
+.npm/
+.rediscli_history
+.ssh/
+.viminfo
+.xbuild/
+webapp/node/node_modules/
+
