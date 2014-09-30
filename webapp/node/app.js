@@ -50,28 +50,27 @@ if (cluster.isMaster) {
                 }
 
                 mysqlPool.query(
-                  'SELECT COUNT(1) AS failures FROM login_log WHERE ' +
-                  'user_id = ? AND id > IFNULL((select id from login_log where ' +
-                  'user_id = ? AND succeeded = 1 ORDER BY id DESC LIMIT 1), 0);',
-                  [user.id, user.id],
-                  // 'SELECT id,succeeded FROM login_log WHERE user_id = ?',
-                  // [user.id],
+                  // 'SELECT COUNT(1) AS failures FROM login_log WHERE ' +
+                  // 'user_id = ? AND id > IFNULL((select id from login_log where ' +
+                  // 'user_id = ? AND succeeded = 1 ORDER BY id DESC LIMIT 1), 0);',
+                  // [user.id, user.id],
+                  'SELECT id,succeeded FROM login_log WHERE user_id = ? ORDER BY id desc',  // order byを使わないと順序保証不可能
+                  [user.id],
                   function(err, rows) {
                         if(err) {
                           return callback(false);
                         }
+                        var cnt = 0, i, length = rows.length;
+                        for (i = 0; i < length; i++) {
+                                if (rows[i].succeeded === 0) {
+                                        cnt++;
+                                } else {
+                                        break;
+                                }
+                        }
+                        callback(globalConfig.userLockThreshold <= cnt);
 
-                        // var cnt = 0, i;
-                        // for (i=rows.length; i>0; i--) {
-                                // if (rows[i-1].succeeded == 0) {
-                                        // cnt++;
-                                // } else {
-                                        // break;
-                                // }
-                        // }
-                        // callback(globalConfig.userLockThreshold <= cnt);
-
-                        callback(globalConfig.userLockThreshold <= rows[0].failures);
+                        // callback(globalConfig.userLockThreshold <= rows[0].failures);
                   }
                 );
           },
@@ -82,15 +81,15 @@ if (cluster.isMaster) {
                   // 'ip = ? AND id > IFNULL((select id from login_log where ip = ? AND ' +
                   // 'succeeded = 1 ORDER BY id DESC LIMIT 1), 0);',
                   // [ip, ip],
-                  'SELECT id,succeeded FROM login_log WHERE ip = ?',
+                  'SELECT id,succeeded FROM login_log WHERE ip = ? ORDER BY id desc',  // order byを使わないと順序保証不可能
                   [ip],
                   function(err, rows) {
                         if(err) {
                           return callback(false);
                         }
-                        var cnt = 0, i;
-                        for (i=rows.length; i>0; i--) {
-                                if (rows[i-1].succeeded === 0) {
+                        var cnt = 0, i, length = rows.length;
+                        for (i = 0; i < length; i++) {
+                                if (rows[i].succeeded === 0) {
                                         cnt++;
                                 } else {
                                         break;

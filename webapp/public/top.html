@@ -10,7 +10,7 @@
   <body>
     <div class="container">
       <h1 id="topbar">
-        <a href="/"><img src="/images/isucon-bank.png" alt="いすこん銀行 オンラインバンキングサービス"></a>
+        <a id="a-img-top" href="/"></a>
       </h1>
       <div id="be-careful-phising" class="panel panel-danger">
         <div class="panel-heading">
@@ -51,24 +51,29 @@
     </div>
 
     <script type="text/javascript">
+      var head = document.getElementsByTagName('head').item(0);
       // css追加
       var link = document.createElement('link');
       link.setAttribute('rel', 'stylesheet');
       link.setAttribute('href', '/stylesheets/bootstrap.min.css');
-      var head = document.getElementsByTagName('head').item(0);
       head.appendChild(link);
 
       var link = document.createElement('link');
       link.setAttribute('rel', 'stylesheet');
       link.setAttribute('href', '/stylesheets/bootflat.min.css');
-      var head = document.getElementsByTagName('head').item(0);
       head.appendChild(link);
 
       var link = document.createElement('link');
       link.setAttribute('rel', 'stylesheet');
       link.setAttribute('href', '/stylesheets/isucon-bank.css');
-      var head = document.getElementsByTagName('head').item(0);
       head.appendChild(link);
+	  
+	  // img追加
+	  var img = document.createElement('img');
+	  img.setAttribute('src', '/images/isucon-bank.png');
+	  img.setAttribute('alt', 'いすこん銀行 オンラインバンキングサービス');
+	  var a = document.getElementById('a-img-top');
+	  a.appendChild(img);
     </script>
 
   </body>
