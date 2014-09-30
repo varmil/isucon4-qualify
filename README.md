@@ -25,7 +25,8 @@ TNG isucon4_qualify
 
 ##### 09/30 18:00 更新
 * crypto通さずにパスワードを直読み比較。
-* Usersテーブルのレコードを事前に全てRedisに載せ替え、そこからReadすることで *Score 62000* まで上昇。
+* `init.js` を使うことでUsersテーブルのレコードを事前に全てRedisにset
+* MySQLを使わずRedisからReadすることで *Score 62000* まで上昇。
 
 ##### 09/30 23:45 更新
 * `order by id desc` を使って取得順序を保証。（lockとbanに関して）
